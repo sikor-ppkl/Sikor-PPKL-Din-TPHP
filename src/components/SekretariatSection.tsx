@@ -260,17 +260,17 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
             {/* Sekretaris Profile Box */}
             <div className="bg-stone-50 border border-stone-200/80 rounded-2xl p-4 sm:p-5 flex items-center gap-3.5 w-full lg:w-auto shadow-2xs">
               <div className="w-12 h-12 rounded-xl bg-emerald-900 text-amber-300 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                YL
+                YT
               </div>
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
                   Sekretaris Dinas
                 </div>
                 <div className="text-sm font-extrabold text-stone-900">
-                  Drs. Yohanis B. Liu, M.Si
+                  YEHUDA A.N. TUNLIU, SP
                 </div>
                 <div className="text-xs text-stone-500 font-mono">
-                  NIP. 19730514 199903 1 004 · Pembina (IV/a)
+                  NIP. 19730405 200212 1 007 · Pembina Tk. I (IV/b)
                 </div>
               </div>
             </div>

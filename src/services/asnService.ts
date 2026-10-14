@@ -5,8 +5,8 @@ export const DEFAULT_ASN_API_URL =
   'https://script.google.com/macros/s/AKfycbxSoOOfNblJcPUy4LqIUliJS2_RlpkzvtHDzKluYftpNxFAlrgocxNSrKhMN8O3ex71/exec';
 
 const STORAGE_KEY_URL = 'sikor_asn_api_url';
-const STORAGE_KEY_CACHE = 'sikor_asn_cache_data';
-const STORAGE_KEY_CACHE_TIME = 'sikor_asn_cache_time';
+const STORAGE_KEY_CACHE = 'sikor_asn_cache_data_v3';
+const STORAGE_KEY_CACHE_TIME = 'sikor_asn_cache_time_v3';
 
 export type AsnErrorType = 'PERMISSION_403' | 'DOGET_NOT_FOUND' | 'NETWORK_ERROR' | 'INVALID_DATA' | null;
 

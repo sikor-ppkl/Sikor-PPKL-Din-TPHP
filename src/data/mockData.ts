@@ -58,8 +58,8 @@ export const BIDANG_DATA: BidangItem[] = [
     code: 'SEKR',
     name: 'Sekretariat Dinas',
     shortName: 'Sekretariat',
-    kepalaBidang: 'Drs. Yohanis B. Liu, M.Si',
-    nip: '19730514 199903 1 004',
+    kepalaBidang: 'YEHUDA A.N. TUNLIU, SP',
+    nip: '19730405 200212 1 007',
     color: 'slate',
     iconName: 'Building2',
     summary: 'Pusat koordinasi administratif, pengelolaan perencanaan Renja/DPA, keuangan, kepegawaian, perlengkapan, serta pengelolaan sistem pelaporan SIKOR PPKL terpadu.',
@@ -396,8 +396,8 @@ export const ORG_CHART: OrgNode = {
     {
       id: 'sekretaris',
       position: 'Sekretaris Dinas',
-      name: 'Drs. Yohanis B. Liu, M.Si',
-      nip: '19730514 199903 1 004',
+      name: 'YEHUDA A.N. TUNLIU, SP',
+      nip: '19730405 200212 1 007',
       golongan: 'Pembina Tk. I (IV/b)',
       department: 'Sekretariat',
       level: 2,
@@ -663,15 +663,15 @@ export const MOCK_DATA_ASN: AsnItem[] = [
   },
   {
     id: 'asn-02',
-    nip: '19730514 199903 1 004',
-    nama: 'Drs. Yohanis B. Liu, M.Si',
+    nip: '19730405 200212 1 007',
+    nama: 'YEHUDA A.N. TUNLIU, SP',
     jabatan: 'Sekretaris Dinas',
-    golongan: 'Pembina (IV/a)',
-    pangkat: 'Pembina',
+    golongan: 'Pembina Tk. I (IV/b)',
+    pangkat: 'Pembina Tingkat I',
     status: 'PNS',
     unitKerja: 'Sekretariat Dinas',
-    pendidikanTerakhir: 'S2 Administrasi Publik',
-    tmt: '01-03-1999'
+    pendidikanTerakhir: 'S1 Pertanian',
+    tmt: '01-12-2002'
   },
   {
     id: 'asn-03',
@@ -841,7 +841,7 @@ export const MOCK_PROGRAM_KEGIATAN: ProgramKegiatanItem[] = [
     indikatorKinerja: 'Persentase Dokumen Perencanaan (Renja, Renstra, DPA) dan Pelaporan SIKOR Tepat Waktu',
     targetKinerja: '100% (4 Dokumen Utama & 4 Laporan SIKOR)',
     paguAnggaran: 420000000,
-    penanggungJawab: 'Drs. Yohanis B. Liu, M.Si (Sekretaris Dinas)',
+    penanggungJawab: 'YEHUDA A.N. TUNLIU, SP (Sekretaris Dinas)',
     subBidangPengampu: 'Subag Program & Perencanaan',
     status: 'Sedang Berjalan'
   },
