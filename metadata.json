@@ -1,0 +1,6 @@
+{
+  "name": "SIKOR PPKL - Dinas Pertanian Kab. TTS",
+  "description": "Sistem Koordinasi Perencanaan Program Kegiatan dan Pelaporan - Dinas Tanaman Pangan, Hortikultura, dan Perkebunan Kabupaten Timor Tengah Selatan",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
