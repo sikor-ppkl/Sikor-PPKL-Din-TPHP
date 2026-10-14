@@ -2,11 +2,11 @@ import { AsnItem } from '../types';
 import { MOCK_DATA_ASN } from '../data/mockData';
 
 export const DEFAULT_ASN_API_URL = 
-  'https://script.google.com/macros/s/AKfycbxSoOOfNblJcPUy4LqIUliJS2_RlpkzvtHDzKluYftpNxFAlrgocxNSrKhMN8O3ex71/exec';
+  'https://script.google.com/macros/s/AKfycbwjJNrHuJP8Fk26rIqt7TxVcAx79xqgQqpDkjy-Tcvov2BL862MEQVqXWjSnDoBeCQZ/exec';
 
-const STORAGE_KEY_URL = 'sikor_asn_api_url';
-const STORAGE_KEY_CACHE = 'sikor_asn_cache_data_v3';
-const STORAGE_KEY_CACHE_TIME = 'sikor_asn_cache_time_v3';
+const STORAGE_KEY_URL = 'sikor_asn_api_url_v2';
+const STORAGE_KEY_CACHE = 'sikor_asn_cache_data_v4';
+const STORAGE_KEY_CACHE_TIME = 'sikor_asn_cache_time_v4';
 
 export type AsnErrorType = 'PERMISSION_403' | 'DOGET_NOT_FOUND' | 'NETWORK_ERROR' | 'INVALID_DATA' | null;
 
@@ -167,11 +167,9 @@ export function normalizeAsnRecords(raw: unknown): AsnItem[] {
 
   let items: any[] = [];
 
-  // Check if it's an object with array property
   if (Array.isArray(raw)) {
-    // Check if it's 2D array: [ [headers...], [row1...], [row2...] ]
     if (raw.length > 1 && Array.isArray(raw[0])) {
-      const headers = raw[0].map((h: any) => String(h).trim().toLowerCase());
+      const headers = raw[0].map((h: any) => String(h).trim());
       items = raw.slice(1).map((row: any[]) => {
         const obj: Record<string, any> = {};
         headers.forEach((h: string, idx: number) => {
@@ -182,25 +180,13 @@ export function normalizeAsnRecords(raw: unknown): AsnItem[] {
     } else {
       items = raw;
     }
-  } else if (typeof raw === 'object') {
+  } else if (typeof raw === 'object' && raw !== null) {
     const obj = raw as Record<string, any>;
     if (Array.isArray(obj.data)) items = obj.data;
     else if (Array.isArray(obj.result)) items = obj.result;
     else if (Array.isArray(obj.records)) items = obj.records;
-    else if (Array.isArray(obj.values)) {
-      if (Array.isArray(obj.values[0])) {
-        const headers = obj.values[0].map((h: any) => String(h).trim().toLowerCase());
-        items = obj.values.slice(1).map((row: any[]) => {
-          const rowObj: Record<string, any> = {};
-          headers.forEach((h: string, idx: number) => {
-            rowObj[h] = row[idx] !== undefined ? row[idx] : '';
-          });
-          return rowObj;
-        });
-      } else {
-        items = obj.values;
-      }
-    } else if (Array.isArray(obj.items)) items = obj.items;
+    else if (Array.isArray(obj.values)) items = obj.values;
+    else if (Array.isArray(obj.items)) items = obj.items;
     else if (Array.isArray(obj.rows)) items = obj.rows;
   }
 
@@ -209,7 +195,6 @@ export function normalizeAsnRecords(raw: unknown): AsnItem[] {
   return items
     .filter(row => row && typeof row === 'object')
     .map((row, index) => {
-      // Find case-insensitive property
       const findProp = (possibleKeys: string[]): string => {
         const keys = Object.keys(row);
         for (const target of possibleKeys) {
@@ -225,19 +210,33 @@ export function normalizeAsnRecords(raw: unknown): AsnItem[] {
         return '';
       };
 
-      const nama = findProp(['nama', 'nama_lengkap', 'namalengkap', 'namapegawai', 'nama_pegawai', 'name']) || `Pegawai ${index + 1}`;
+      const nama = findProp(['nama', 'nama_lengkap', 'namalengkap', 'namapegawai', 'nama_pegawai', 'name']) || '';
       const nip = findProp(['nip', 'nip_pegawai', 'nomor_induk', 'nomorinduk', 'id_pegawai']) || '-';
-      const jabatan = findProp(['jabatan', 'jabatan_kedinasan', 'posisi', 'tugas', 'role']) || 'Staf Pelaksana';
-      const golongan = findProp(['golongan', 'gol', 'pangkat_golongan', 'golongan_ruang', 'ruang']) || 'III/a';
-      const pangkat = findProp(['pangkat', 'pangkat_terakhir']) || getPangkatFromGolongan(golongan);
-      
-      const rawStatus = findProp(['status', 'kepegawaian', 'status_kepegawaian', 'jenis_pegawai', 'kategori']).toUpperCase();
-      const status: 'PNS' | 'PPPK' = rawStatus.includes('PPPK') || rawStatus.includes('P3K') ? 'PPPK' : 'PNS';
 
-      const unitKerja = findProp(['unitkerja', 'unit_kerja', 'unitpenempatan', 'penempatan', 'lokasi', 'bpp', 'bagian', 'bidang']) || 'Dinas Pertanian TTS';
+      if (!nama || nama.toUpperCase() === 'NAMA' || nama.toUpperCase().includes('DATA PEGAWAI') || nama.toUpperCase() === 'KABUPATEN') {
+        return null;
+      }
+
+      const rawKet = findProp(['keterangan', 'ket', 'status', 'kepegawaian', 'jenis_pegawai', 'kategori']).toUpperCase();
+      const status: 'PNS' | 'PPPK' = rawKet.includes('PPPK') || rawKet.includes('P3K') ? 'PPPK' : 'PNS';
+
+      let golongan = findProp(['golongan', 'gol', 'pangkat_golongan', 'golongan_ruang', 'ruang', '']);
+      if (!golongan || golongan === '-' || golongan.length > 10) {
+        golongan = row[''] ? String(row['']).trim() : 'III/a';
+      }
+
+      let pangkat = findProp(['pangkat', 'pangkat_terakhir', 'pangkat/gol.ruang', 'pangkatgolruang']);
+      if (!pangkat || pangkat === golongan || pangkat === '-') {
+        pangkat = getPangkatFromGolongan(golongan);
+      }
+
+      const skFungsional = findProp(['sk_fungsional', 'skfungsional', 'fungsional']) || '';
+      const jabatan = findProp(['jabatan', 'jabatan_kedinasan', 'posisi', 'tugas', 'role']) || (skFungsional && skFungsional !== '-' ? `Fungsional (${skFungsional})` : 'Staf Pelaksana');
+
+      const unitKerja = findProp(['unitkerja', 'unit_kerja', 'unitpenempatan', 'penempatan', 'lokasi', 'bpp', 'bagian', 'bidang']) || 'Dinas Tanaman Pangan Hortikultura dan Perkebunan';
       const pendidikanTerakhir = findProp(['pendidikan', 'pendidikanterakhir', 'pendidikan_terakhir', 'ijazah', 'strata']) || 'S1 Pertanian';
-      const tmt = findProp(['tmt', 'tmt_pegawai', 'tmt_jabatan', 'tahun_masuk']) || '2020-01-01';
-      const id = String(row.id || row.ID || row.no || `asn-${index + 1}`);
+      const tmt = findProp(['tmt', 'tmt_pegawai', 'tmt_jabatan', 'tahun_masuk', 'spmt']) || '2020-01-01';
+      const id = String(row.id || row.ID || row.NO || row.no || `asn-${index + 1}`);
 
       return {
         id,
@@ -252,7 +251,7 @@ export function normalizeAsnRecords(raw: unknown): AsnItem[] {
         tmt
       };
     })
-    .filter(asn => asn.nama && asn.nama !== `Pegawai 0` && asn.nip !== '');
+    .filter((asn): asn is AsnItem => asn !== null && asn.nama !== '' && asn.nama.toUpperCase() !== 'NAMA');
 }
 
 function getPangkatFromGolongan(gol: string): string {

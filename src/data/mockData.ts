@@ -1489,12 +1489,38 @@ export const MOCK_ASET: AsetItem[] = [
 
 export const MOCK_FISIK_KEUANGAN: FisikKeuanganItem[] = [
   {
-    id: 'rfk-01',
-    unitKerja: 'Sekretariat Dinas',
-    kodeUnit: 'SEKR',
-    paguAnggaran: 2450000000,
-    realisasiKeuangan: 1989400000,
-    persenKeuangan: 81.20,
+    id: 'prog-01',
+    unitKerja: 'Program Penunjang Urusan Pemerintah Daerah',
+    kodeUnit: '3.27.01',
+    paguAnggaran: 13104611912,
+    realisasiKeuangan: 8500000000,
+    persenKeuangan: 64.86,
+    targetFisik: 70.00,
+    realisasiFisik: 72.50,
+    deviasiFisik: 2.50,
+    triwulan: 'TW III',
+    statusKinerja: 'Baik'
+  },
+  {
+    id: 'prog-02',
+    unitKerja: 'Program Penyediaan & Pengembangan Sarana Pertanian',
+    kodeUnit: '3.27.02',
+    paguAnggaran: 4915634712,
+    realisasiKeuangan: 3000000000,
+    persenKeuangan: 61.03,
+    targetFisik: 65.00,
+    realisasiFisik: 66.80,
+    deviasiFisik: 1.80,
+    triwulan: 'TW III',
+    statusKinerja: 'Baik'
+  },
+  {
+    id: 'prog-03',
+    unitKerja: 'Program Penyediaan & Pengembangan Prasarana Pertanian',
+    kodeUnit: '3.27.03',
+    paguAnggaran: 2695888500,
+    realisasiKeuangan: 2292104184,
+    persenKeuangan: 85.02,
     targetFisik: 80.00,
     realisasiFisik: 84.50,
     deviasiFisik: 4.50,
@@ -1502,56 +1528,17 @@ export const MOCK_FISIK_KEUANGAN: FisikKeuanganItem[] = [
     statusKinerja: 'Sangat Baik'
   },
   {
-    id: 'rfk-02',
-    unitKerja: 'Bidang Tanaman Pangan',
-    kodeUnit: 'TP',
-    paguAnggaran: 5800000000,
-    realisasiKeuangan: 4263000000,
-    persenKeuangan: 73.50,
-    targetFisik: 75.00,
-    realisasiFisik: 78.20,
-    deviasiFisik: 3.20,
+    id: 'prog-04',
+    unitKerja: 'Program Penyuluhan Pertanian',
+    kodeUnit: '3.27.04',
+    paguAnggaran: 34504400,
+    realisasiKeuangan: 0,
+    persenKeuangan: 0.00,
+    targetFisik: 50.00,
+    realisasiFisik: 45.00,
+    deviasiFisik: -5.00,
     triwulan: 'TW III',
-    statusKinerja: 'Baik'
-  },
-  {
-    id: 'rfk-03',
-    unitKerja: 'Bidang Hortikultura',
-    kodeUnit: 'HORTI',
-    paguAnggaran: 3600000000,
-    realisasiKeuangan: 2700000000,
-    persenKeuangan: 75.00,
-    targetFisik: 75.00,
-    realisasiFisik: 79.50,
-    deviasiFisik: 4.50,
-    triwulan: 'TW III',
-    statusKinerja: 'Sangat Baik'
-  },
-  {
-    id: 'rfk-04',
-    unitKerja: 'Bidang Perkebunan',
-    kodeUnit: 'BUN',
-    paguAnggaran: 3200000000,
-    realisasiKeuangan: 2297600000,
-    persenKeuangan: 71.80,
-    targetFisik: 72.00,
-    realisasiFisik: 76.40,
-    deviasiFisik: 4.40,
-    triwulan: 'TW III',
-    statusKinerja: 'Baik'
-  },
-  {
-    id: 'rfk-05',
-    unitKerja: 'Bidang PSP (Sarana & Prasarana)',
-    kodeUnit: 'PSP',
-    paguAnggaran: 3700000000,
-    realisasiKeuangan: 2678800000,
-    persenKeuangan: 72.40,
-    targetFisik: 74.00,
-    realisasiFisik: 77.10,
-    deviasiFisik: 3.10,
-    triwulan: 'TW III',
-    statusKinerja: 'Baik'
+    statusKinerja: 'Perlu Perhatian'
   }
 ];
 

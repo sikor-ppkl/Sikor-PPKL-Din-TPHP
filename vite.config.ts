@@ -59,11 +59,15 @@ function asnDataProxyPlugin(): Plugin {
   const handler = async (req: any, res: any, next: any) => {
     try {
       const urlObj = new URL(req.url || '', 'http://localhost:3000');
-      if (urlObj.pathname === '/api/asn-data' || urlObj.pathname === '/api/aset-data') {
-        const isAset = urlObj.pathname === '/api/aset-data';
-        const defaultTarget = isAset
-          ? 'https://script.google.com/macros/s/AKfycbxVQf52E0pkJz5JpQXVH5mnprBacz6NhQNOXuMs3ik4hN7Lbu_7PHc-DvG0aY8JQeDjQg/exec'
-          : 'https://script.google.com/macros/s/AKfycbxSoOOfNblJcPUy4LqIUliJS2_RlpkzvtHDzKluYftpNxFAlrgocxNSrKhMN8O3ex71/exec';
+      if (urlObj.pathname === '/api/asn-data' || urlObj.pathname === '/api/aset-data' || urlObj.pathname === '/api/pad-data' || urlObj.pathname === '/api/rfk-data') {
+        let defaultTarget = 'https://script.google.com/macros/s/AKfycbxSoOOfNblJcPUy4LqIUliJS2_RlpkzvtHDzKluYftpNxFAlrgocxNSrKhMN8O3ex71/exec';
+        if (urlObj.pathname === '/api/aset-data') {
+          defaultTarget = 'https://script.google.com/macros/s/AKfycbxVQf52E0pkJz5JpQXVH5mnprBacz6NhQNOXuMs3ik4hN7Lbu_7PHc-DvG0aY8JQeDjQg/exec';
+        } else if (urlObj.pathname === '/api/pad-data') {
+          defaultTarget = 'https://script.google.com/macros/s/AKfycbwTDBonV2u-yepq6axsjptwx2Mv8t5tn8suZgq3u1PwZxNTUBjfOAZmLU0rP_rK8HjC/exec';
+        } else if (urlObj.pathname === '/api/rfk-data') {
+          defaultTarget = 'https://script.google.com/macros/s/AKfycbyK0TIXdT32_5lcfA3OYla3svW88UXik-Pen2CgIYFjrqIu8zFHH9Ww7DEXWtBLHVEOCA/exec';
+        }
         
         const rawTarget = urlObj.searchParams.get('url') || defaultTarget;
         

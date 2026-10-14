@@ -125,7 +125,7 @@ export interface LaporanPadItem {
   periode: string;
   unitPengelola: string;
   nomorBuktiKas: string;
-  statusSetoran: 'Terverifikasi Kasda' | 'Dalam Proses Rekonsiliasi';
+  statusSetoran: 'Terverifikasi Kasda' | 'Dalam Proses Rekonsiliasi' | string;
 }
 
 export type KibCategory = 'KIB A' | 'KIB B' | 'KIB C' | 'KIB D' | 'KIB E' | 'KIB F';

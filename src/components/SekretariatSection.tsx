@@ -59,6 +59,9 @@ import {
 } from '../data/mockData';
 import { useAsnData } from '../hooks/useAsnData';
 import { RECOMMENDED_APPS_SCRIPT_CODE } from '../services/asnService';
+import { usePadData } from '../hooks/usePadData';
+import { RECOMMENDED_PAD_APPS_SCRIPT_CODE } from '../services/padService';
+import { useRfkData, RECOMMENDED_RFK_APPS_SCRIPT_CODE } from '../hooks/useRfkData';
 import { ProgramKegiatanDriveTab } from './ProgramKegiatanDriveTab';
 import { AsetSectionView } from './AsetSectionView';
 
@@ -95,19 +98,152 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
     defaultUrl: defaultAsnUrl
   } = useAsnData();
 
+  // Dynamic Google Sheets / Apps Script PAD Data Hook
+  const {
+    data: livePadList,
+    isLoading: isPadLoading,
+    isRefreshing: isPadRefreshing,
+    isLive: isPadLive,
+    lastUpdated: padLastUpdated,
+    sourceUrl: padSourceUrl,
+    error: padError,
+    errorType: padErrorType,
+    autoSync: padAutoSync,
+    setAutoSync: setPadAutoSync,
+    countdown: padCountdown,
+    refreshData: refreshPadData,
+    updateUrl: updatePadUrl,
+    resetUrl: resetPadUrl,
+    defaultUrl: defaultPadUrl,
+    totalTargetPad,
+    totalRealisasiPad,
+    persentaseTotalPad,
+    sisaTargetPad
+  } = usePadData();
+
+  // Dynamic Google Sheets / Apps Script RFK (Fisik & Keuangan) Data Hook
+  const {
+    data: liveRfkList,
+    isLoading: isRfkLoading,
+    isRefreshing: isRfkRefreshing,
+    isLive: isRfkLive,
+    lastUpdated: rfkLastUpdated,
+    sourceUrl: rfkSourceUrl,
+    error: rfkError,
+    errorType: rfkErrorType,
+    autoSync: rfkAutoSync,
+    setAutoSync: setRfkAutoSync,
+    countdown: rfkCountdown,
+    refresh: refreshRfkData,
+    updateSourceUrl: updateRfkUrl,
+    totalPagu,
+    totalRealisasi,
+    sisaAnggaran,
+    avgFisik,
+    persenKeu
+  } = useRfkData();
+
   // Filters for Data ASN
   const [asnSearch, setAsnSearch] = useState('');
   const [asnStatusFilter, setAsnStatusFilter] = useState<'Semua' | 'PNS' | 'PPPK'>('Semua');
   const [asnUnitFilter, setAsnUnitFilter] = useState<string>('Semua');
   const [selectedAsnDetail, setSelectedAsnDetail] = useState<AsnItem | null>(null);
 
-  // Endpoint Settings Modal & Troubleshooting UI
+  // Endpoint Settings Modal & Troubleshooting UI for ASN
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [inputUrl, setInputUrl] = useState(asnSourceUrl);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showScriptModal, setShowScriptModal] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [copyScriptSuccess, setCopyScriptSuccess] = useState(false);
+
+  // Filters & Modals for PAD
+  const [padSearch, setPadSearch] = useState('');
+  const [showPadSettingsModal, setShowPadSettingsModal] = useState(false);
+  const [padInputUrl, setPadInputUrl] = useState(padSourceUrl);
+  const [showPadScriptModal, setShowPadScriptModal] = useState(false);
+  const [copyPadSuccess, setCopyPadSuccess] = useState(false);
+  const [copyPadScriptSuccess, setCopyPadScriptSuccess] = useState(false);
+
+  // Modals for RFK
+  const [showRfkSettingsModal, setShowRfkSettingsModal] = useState(false);
+  const [rfkInputUrl, setRfkInputUrl] = useState(rfkSourceUrl);
+  const [showRfkScriptModal, setShowRfkScriptModal] = useState(false);
+  const [copyRfkSuccess, setCopyRfkSuccess] = useState(false);
+  const [copyRfkScriptSuccess, setCopyRfkScriptSuccess] = useState(false);
+
+  const handleCopyRfkUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopyRfkSuccess(true);
+    setTimeout(() => setCopyRfkSuccess(false), 2000);
+  };
+
+  const handleCopyRfkScript = () => {
+    navigator.clipboard.writeText(RECOMMENDED_RFK_APPS_SCRIPT_CODE);
+    setCopyRfkScriptSuccess(true);
+    setTimeout(() => setCopyRfkScriptSuccess(false), 2500);
+  };
+
+  const handleCopyPadUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopyPadSuccess(true);
+    setTimeout(() => setCopyPadSuccess(false), 2000);
+  };
+
+  const handleCopyPadScript = () => {
+    navigator.clipboard.writeText(RECOMMENDED_PAD_APPS_SCRIPT_CODE);
+    setCopyPadScriptSuccess(true);
+    setTimeout(() => setCopyPadScriptSuccess(false), 2500);
+  };
+
+  const filteredPadList = useMemo(() => {
+    return livePadList.filter((item) => {
+      const q = padSearch.toLowerCase().trim();
+      return (
+        !q ||
+        item.sumberPad.toLowerCase().includes(q) ||
+        item.uraianRetribusi.toLowerCase().includes(q) ||
+        item.unitPengelola.toLowerCase().includes(q) ||
+        item.nomorBuktiKas.toLowerCase().includes(q) ||
+        item.statusSetoran.toLowerCase().includes(q)
+      );
+    });
+  }, [livePadList, padSearch]);
+
+  const handleExportPadCsv = () => {
+    const headers = [
+      'No',
+      'Sumber PAD',
+      'Uraian Retribusi',
+      'Target Tahunan (Rp)',
+      'Realisasi (Rp)',
+      'Persentase Capaian (%)',
+      'Periode',
+      'Unit Pengelola',
+      'Nomor Bukti Kas (STS)',
+      'Status Setoran Kasda'
+    ];
+    const rows = filteredPadList.map((p, idx) => [
+      idx + 1,
+      `"${p.sumberPad.replace(/"/g, '""')}"`,
+      `"${p.uraianRetribusi.replace(/"/g, '""')}"`,
+      p.targetTahunan,
+      p.realisasiSdSaatIni,
+      p.persentaseCapaian,
+      `"${p.periode.replace(/"/g, '""')}"`,
+      `"${p.unitPengelola.replace(/"/g, '""')}"`,
+      `"${p.nomorBuktiKas.replace(/"/g, '""')}"`,
+      `"${p.statusSetoran.replace(/"/g, '""')}"`
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Laporan_PAD_Dinas_Pertanian_TTS_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Filters for Rencana Realisasi
   const [rrTriwulanFilter, setRrTriwulanFilter] = useState<string>('Semua');
@@ -312,9 +448,27 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
             </div>
 
             <div className="bg-stone-50/80 rounded-xl p-3.5 border border-stone-200">
-              <div className="text-xs text-stone-500 font-medium">Capaian Retribusi (PAD)</div>
-              <div className="text-xl sm:text-2xl font-black text-emerald-700 mt-1">76.2%</div>
-              <div className="text-[11px] text-stone-600 font-medium mt-0.5">Rp 342,85 Jt Realisasi</div>
+              <div className="flex items-center justify-between text-xs text-stone-500 font-medium">
+                <span>Capaian Retribusi (PAD)</span>
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                  isPadLive 
+                    ? 'bg-emerald-100 text-emerald-800' 
+                    : 'bg-amber-100 text-amber-800'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isPadLive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                  {isPadLive ? 'Live Sync' : 'Tersimpan'}
+                </span>
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-emerald-700 mt-1">
+                {isPadLoading ? (
+                  <span className="text-stone-400 text-sm font-normal">Memuat...</span>
+                ) : (
+                  `${persentaseTotalPad.toFixed(1)}%`
+                )}
+              </div>
+              <div className="text-[11px] text-stone-600 font-medium mt-0.5 truncate">
+                {formatIDR(totalRealisasiPad)} Realisasi
+              </div>
             </div>
 
             <div className="bg-stone-50/80 rounded-xl p-3.5 border border-stone-200">
@@ -859,7 +1013,7 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
         )}
 
         {/* ============================================================ */}
-        {/* TAB 4: LAPORAN PAD */}
+        {/* TAB 4: LAPORAN PAD (SINKRONISASI GOOGLE APPS SCRIPT) */}
         {/* ============================================================ */}
         {activeTab === 'laporan-pad' && (
           <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-8 shadow-sm space-y-6 animate-in fade-in duration-200">
@@ -874,14 +1028,154 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
                   LAPORAN PAD (Pendapatan Asli Daerah)
                 </h3>
                 <p className="text-xs sm:text-sm text-stone-500 mt-0.5">
-                  Laporan mengenai Pendapatan Asli Daerah dari retribusi sewa alat mesin pertanian dan penjualan hasil kebun percontohan
+                  Laporan pemantauan realisasi Pendapatan Asli Daerah dari retribusi sewa alat mesin pertanian dan penjualan hasil kebun percontohan
                 </p>
               </div>
 
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold">
-                <Coins className="w-4 h-4 text-amber-500" />
-                <span>Kasda Terintegrasi Bank NTT</span>
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handleExportPadCsv}
+                  className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Unduh Data PAD sebagai file CSV"
+                >
+                  <Download className="w-3.5 h-3.5 text-stone-600" />
+                  <span>Ekspor CSV</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setPadInputUrl(padSourceUrl);
+                    setShowPadSettingsModal(true);
+                  }}
+                  className="px-3 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 border border-stone-200 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Pengaturan Endpoint Google Apps Script PAD"
+                >
+                  <Settings className="w-3.5 h-3.5 text-stone-500" />
+                  <span>Sumber Data PAD</span>
+                </button>
+
+                <button
+                  onClick={() => setShowPadScriptModal(true)}
+                  className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Kode Google Apps Script doGet untuk PAD"
+                >
+                  <Code className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Kode doGet</span>
+                </button>
+
+                <button
+                  onClick={refreshPadData}
+                  disabled={isPadRefreshing}
+                  className="px-3.5 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-75"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isPadRefreshing ? 'animate-spin' : ''}`} />
+                  <span>{isPadRefreshing ? 'Menyinkronkan...' : 'Sinkronkan Sekarang'}</span>
+                </button>
               </div>
+            </div>
+
+            {/* Bilah Status Endpoint Google Apps Script PAD */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              isPadLive 
+                ? 'bg-emerald-50/90 border-emerald-300/80 shadow-2xs' 
+                : padErrorType === 'DOGET_NOT_FOUND'
+                ? 'bg-amber-50/90 border-amber-300'
+                : 'bg-stone-50 border-stone-200'
+            }`}>
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    isPadLive 
+                      ? 'bg-emerald-800 text-amber-300 shadow-xs' 
+                      : padErrorType === 'DOGET_NOT_FOUND'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-stone-200 text-stone-700'
+                  }`}>
+                    {isPadLive ? <Radio className="w-4 h-4 animate-pulse" /> : <Coins className="w-4 h-4" />}
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-bold text-stone-900">
+                        Sumber Data Tunggal PAD:
+                      </span>
+                      {isPadLive ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                          Terbaca Langsung dari Google Apps Script ({livePadList.length} Objek Retribusi Terverifikasi)
+                        </span>
+                      ) : padErrorType === 'DOGET_NOT_FOUND' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-950">
+                          <AlertCircle className="w-3 h-3 text-amber-800" />
+                          Endpoint Terhubung (Fungsi doGet Belum Terpasang)
+                        </span>
+                      ) : isPadLoading ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900">
+                          <RefreshCw className="w-3 h-3 animate-spin text-blue-600" />
+                          Sedang Membaca Data dari Google Apps Script...
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-stone-200 text-stone-700">
+                          Data PAD Terverifikasi ({livePadList.length} Objek)
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="text-[11px] text-stone-600 truncate max-w-2xl font-mono">
+                      <span className="text-emerald-800 font-semibold">URL:</span> {padSourceUrl}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 self-start lg:self-center">
+                  {padLastUpdated && (
+                    <span className="text-[11px] text-stone-500">
+                      Pembaruan: <strong className="text-stone-700">{new Date(padLastUpdated).toLocaleTimeString('id-ID')} WITA</strong>
+                    </span>
+                  )}
+
+                  <button
+                    onClick={() => setPadAutoSync(!padAutoSync)}
+                    className={`text-xs px-2.5 py-1 rounded-lg font-bold border transition-colors cursor-pointer ${
+                      padAutoSync 
+                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300' 
+                        : 'bg-stone-100 text-stone-600 border-stone-200'
+                    }`}
+                  >
+                    Auto-Sync: {padAutoSync ? `Aktif (${padCountdown}s)` : 'Nonaktif'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Informative helper when doGet is missing in Google Apps Script */}
+              {padErrorType === 'DOGET_NOT_FOUND' && (
+                <div className="mt-3 pt-3 border-t border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-950">
+                  <div className="flex items-start gap-2">
+                    <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+                    <span>
+                      Endpoint URL Anda terdaftar: <code>{padSourceUrl}</code>. Google Apps Script merespon <code>Script function not found: doGet</code>. Sistem saat ini menampilkan data dasar PAD Dinas Pertanian TTS. Untuk menghubungkan ke Google Sheets Anda secara live, tempel kode fungsi <code>doGet(e)</code> pada <code>Code.gs</code> di Apps Script Anda.
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => setShowPadScriptModal(true)}
+                      className="px-3 py-1 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-lg cursor-pointer transition-colors shadow-2xs"
+                    >
+                      Salin Kode doGet
+                    </button>
+                    <a
+                      href={padSourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 bg-white border border-amber-300 hover:bg-amber-100 text-amber-950 font-bold rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1"
+                    >
+                      <span>Buka URL</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* PAD Recap Cards */}
@@ -889,7 +1183,7 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
               <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200">
                 <div className="text-xs text-stone-500 font-medium">Target PAD Dinas (2026)</div>
                 <div className="text-xl sm:text-2xl font-black text-stone-900 font-mono mt-1">
-                  Rp 450.000.000
+                  {formatIDR(totalTargetPad)}
                 </div>
                 <div className="text-xs text-stone-500 mt-0.5">Retribusi Alsintan & Hasil Kebun</div>
               </div>
@@ -897,21 +1191,47 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
               <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200">
                 <div className="text-xs text-emerald-800 font-medium">Realisasi Setor Kasda</div>
                 <div className="text-xl sm:text-2xl font-black text-emerald-900 font-mono mt-1">
-                  Rp 342.850.000
+                  {formatIDR(totalRealisasiPad)}
                 </div>
                 <div className="text-xs font-bold text-emerald-700 mt-0.5">
-                  Capaian: 76.19% Target Tahunan
+                  Capaian: {persentaseTotalPad.toFixed(2)}% Target Tahunan
                 </div>
               </div>
 
               <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200">
                 <div className="text-xs text-amber-800 font-medium">Sisa Target Berjalan</div>
                 <div className="text-xl sm:text-2xl font-black text-amber-900 font-mono mt-1">
-                  Rp 107.150.000
+                  {formatIDR(sisaTargetPad)}
                 </div>
                 <div className="text-xs text-amber-700 font-medium mt-0.5">
                   Proyeksi surplus masa panen TW IV
                 </div>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Cari sumber retribusi, uraian, bukti STS..."
+                  value={padSearch}
+                  onChange={(e) => setPadSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition-all"
+                />
+                {padSearch && (
+                  <button
+                    onClick={() => setPadSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="text-xs text-stone-500 self-end sm:self-center">
+                Menampilkan <strong className="text-stone-800">{filteredPadList.length}</strong> dari <strong>{livePadList.length}</strong> objek retribusi
               </div>
             </div>
 
@@ -920,43 +1240,68 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead className="bg-stone-50 text-stone-700 font-semibold border-b border-stone-200 text-xs uppercase tracking-wider">
                   <tr>
-                    <th className="py-3 px-4">Sumber PAD & Uraian</th>
+                    <th className="py-3 px-4 w-12 text-center">No</th>
+                    <th className="py-3 px-4">Sumber PAD & Uraian Retribusi</th>
                     <th className="py-3 px-4 text-right">Target 2026</th>
-                    <th className="py-3 px-4 text-right">Realisasi</th>
+                    <th className="py-3 px-4 text-right">Realisasi Kasda</th>
                     <th className="py-3 px-4 text-center">Capaian</th>
                     <th className="py-3 px-4">Unit Pengelola / Bukti Kas</th>
                     <th className="py-3 px-4 text-center">Status Kasda</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 text-stone-700">
-                  {MOCK_LAPORAN_PAD.map((pad) => (
-                    <tr key={pad.id} className="hover:bg-emerald-50/40 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-stone-900">{pad.sumberPad}</div>
-                        <div className="text-xs text-stone-500">{pad.uraianRetribusi}</div>
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-medium text-stone-700">
-                        {formatIDR(pad.targetTahunan)}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-800">
-                        {formatIDR(pad.realisasiSdSaatIni)}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="font-bold text-xs bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-md font-mono">
-                          {pad.persentaseCapaian.toFixed(1)}%
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-medium text-stone-800">{pad.unitPengelola}</div>
-                        <div className="text-[11px] font-mono text-stone-400">{pad.nomorBuktiKas}</div>
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusBadge(pad.statusSetoran)}`}>
-                          {pad.statusSetoran}
-                        </span>
+                  {filteredPadList.length > 0 ? (
+                    filteredPadList.map((pad, idx) => (
+                      <tr key={pad.id || idx} className="hover:bg-emerald-50/40 transition-colors">
+                        <td className="py-3.5 px-4 text-center font-mono text-stone-400">
+                          {idx + 1}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-stone-900">{pad.sumberPad}</div>
+                          <div className="text-xs text-stone-500 mt-0.5">{pad.uraianRetribusi}</div>
+                          {pad.periode && (
+                            <div className="text-[11px] text-emerald-800 font-medium mt-1">
+                              Periode: {pad.periode}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono font-medium text-stone-700">
+                          {formatIDR(pad.targetTahunan)}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-800">
+                          {formatIDR(pad.realisasiSdSaatIni)}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="font-bold text-xs bg-emerald-100 text-emerald-900 px-2.5 py-1 rounded-md font-mono inline-block">
+                            {pad.persentaseCapaian ? pad.persentaseCapaian.toFixed(1) : '0.0'}%
+                          </span>
+                          <div className="w-16 mx-auto bg-stone-200 rounded-full h-1 mt-1.5 overflow-hidden">
+                            <div 
+                              className="bg-emerald-600 h-1 rounded-full" 
+                              style={{ width: `${Math.min(100, Math.max(0, pad.persentaseCapaian || 0))}%` }}
+                            />
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="font-medium text-stone-800">{pad.unitPengelola}</div>
+                          <div className="text-[11px] font-mono text-stone-400 mt-0.5">{pad.nomorBuktiKas}</div>
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusBadge(pad.statusSetoran)}`}>
+                            {pad.statusSetoran}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-stone-500">
+                        <AlertCircle className="w-8 h-8 text-stone-300 mx-auto mb-2" />
+                        <div className="font-semibold text-stone-700">Tidak ada data PAD yang cocok dengan filter pencarian.</div>
+                        <div className="text-xs text-stone-400 mt-1">Coba gunakan kata kunci lain atau kosongkan kolom pencarian.</div>
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -990,9 +1335,53 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
                 </p>
               </div>
 
-              <div className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900">
-                <Clock className="w-4 h-4 text-blue-700" />
-                <span>Posisi Laporan: Triwulan III (TW III) 2026</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => refreshRfkData()}
+                  disabled={isRfkLoading || isRfkRefreshing}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-semibold border border-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRfkRefreshing ? 'animate-spin' : ''}`} />
+                  <span>{isRfkRefreshing ? 'Menyinkronkan...' : 'Sinkronkan RFK'}</span>
+                </button>
+
+                <button
+                  onClick={() => setShowRfkSettingsModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold border border-stone-300 transition-colors cursor-pointer"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  <span>Atur Link</span>
+                </button>
+
+                <button
+                  onClick={() => setShowRfkScriptModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-semibold border border-amber-300 transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-amber-800" />
+                  <span>Skrip Apps Script</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Live Sync Status Banner */}
+            <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+              isRfkLive 
+                ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900' 
+                : 'bg-amber-50/70 border-amber-200 text-amber-900'
+            }`}>
+              <div className="flex items-center gap-2.5">
+                <div className={`w-2.5 h-2.5 rounded-full ${isRfkLive ? 'bg-emerald-600 animate-pulse' : 'bg-amber-500'}`} />
+                <div>
+                  <span className="font-bold">
+                    {isRfkLive ? 'Terhubung Live ke Google Apps Script (RFK)' : 'Menggunakan Data Cache / Offline Fallback'}
+                  </span>
+                  <span className="text-stone-500 ml-2">
+                    {rfkLastUpdated ? `(Pembaruan terakhir: ${new Date(rfkLastUpdated).toLocaleTimeString('id-ID')})` : ''}
+                  </span>
+                </div>
+              </div>
+              <div className="text-[11px] font-mono text-stone-600 truncate max-w-xs">
+                Sumber: {rfkSourceUrl}
               </div>
             </div>
 
@@ -1001,28 +1390,28 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
               <div className="bg-stone-50 p-5 rounded-2xl border border-stone-200">
                 <div className="text-xs text-stone-500 font-medium">Total Pagu Dinas (APBD 2026)</div>
                 <div className="text-xl sm:text-2xl font-black text-stone-900 font-mono mt-1">
-                  Rp 18.750.000.000
+                  {formatIDR(totalPagu)}
                 </div>
-                <div className="text-xs text-stone-500 mt-1">5 Bidang & Unit Kerja</div>
+                <div className="text-xs text-stone-500 mt-1">{liveRfkList.length} Program / Unit Kerja</div>
               </div>
 
               <div className="bg-emerald-50/70 p-5 rounded-2xl border border-emerald-200">
-                <div className="text-xs text-emerald-800 font-medium">Realisasi Keuangan (SP2D)</div>
+                <div className="text-xs text-emerald-800 font-medium">Sudah Terealisasi (Keuangan)</div>
                 <div className="text-xl sm:text-2xl font-black text-emerald-950 font-mono mt-1">
-                  Rp 13.920.500.000
+                  {formatIDR(totalRealisasi)}
                 </div>
                 <div className="text-xs font-bold text-emerald-800 mt-1">
-                  Capaian: 74.24% dari pagu tahunan
+                  Capaian: {persenKeu.toFixed(2)}% dari pagu tahunan
                 </div>
               </div>
 
-              <div className="bg-blue-50/70 p-5 rounded-2xl border border-blue-200">
-                <div className="text-xs text-blue-800 font-medium">Realisasi Fisik Pekerjaan</div>
-                <div className="text-xl sm:text-2xl font-black text-blue-950 font-mono mt-1">
-                  78.60%
+              <div className="bg-amber-50/70 p-5 rounded-2xl border border-amber-200">
+                <div className="text-xs text-amber-800 font-medium">Belum Terealisasi (Sisa)</div>
+                <div className="text-xl sm:text-2xl font-black text-amber-950 font-mono mt-1">
+                  {formatIDR(sisaAnggaran)}
                 </div>
-                <div className="text-xs font-bold text-emerald-700 mt-1">
-                  Deviasi Fisik: +4.36% (Melampaui Target)
+                <div className="text-xs font-bold text-amber-800 mt-1">
+                  Sisa Anggaran: {(100 - persenKeu).toFixed(2)}%
                 </div>
               </div>
             </div>
@@ -1032,7 +1421,7 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead className="bg-stone-50 text-stone-700 font-semibold border-b border-stone-200 text-xs uppercase tracking-wider">
                   <tr>
-                    <th className="py-3 px-4">Unit Kerja / Bidang</th>
+                    <th className="py-3 px-4">Unit Kerja / Program</th>
                     <th className="py-3 px-4 text-right">Pagu Anggaran</th>
                     <th className="py-3 px-4 text-right">Realisasi Keuangan</th>
                     <th className="py-3 px-4 text-center">% Keuangan</th>
@@ -1043,7 +1432,7 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 text-stone-700">
-                  {MOCK_FISIK_KEUANGAN.map((rfk) => (
+                  {liveRfkList.map((rfk) => (
                     <tr key={rfk.id} className="hover:bg-emerald-50/40 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-stone-900">{rfk.unitKerja}</div>
@@ -1065,7 +1454,7 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
                         {rfk.realisasiFisik.toFixed(1)}%
                       </td>
                       <td className="py-3.5 px-4 text-center font-bold text-emerald-700">
-                        +{rfk.deviasiFisik.toFixed(1)}%
+                        {rfk.deviasiFisik >= 0 ? `+${rfk.deviasiFisik.toFixed(1)}%` : `${rfk.deviasiFisik.toFixed(1)}%`}
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusBadge(rfk.statusKinerja)}`}>
@@ -1459,6 +1848,371 @@ export const SekretariatSection: React.FC<SekretariatSectionProps> = ({
                 >
                   Saya Mengerti
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL: PENGATURAN SUMBER DATA & ENDPOINT PAD */}
+      {/* ============================================================ */}
+      {showPadSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-lg w-full border border-stone-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                  <Receipt className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base">Pengaturan Sumber Data PAD</h3>
+                  <p className="text-xs text-stone-500">Integrasi Google Spreadsheet / Apps Script Web App</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowPadSettingsModal(false)}
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block text-stone-700 font-bold mb-1">
+                  URL Endpoint Google Apps Script PAD:
+                </label>
+                <div className="relative">
+                  <input
+                    type="url"
+                    value={padInputUrl}
+                    onChange={(e) => setPadInputUrl(e.target.value)}
+                    placeholder="https://script.google.com/macros/s/.../exec"
+                    className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl font-mono text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white"
+                  />
+                </div>
+                <p className="text-stone-400 mt-1 text-[11px] leading-relaxed">
+                  URL Web App Google Apps Script (<code className="font-mono">/exec</code>) yang terhubung ke lembar kerja PAD Dinas Tanaman Pangan, Hortikultura, dan Perkebunan Kab. TTS.
+                </p>
+              </div>
+
+              {/* Quick Action buttons */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleCopyPadUrl(padInputUrl)}
+                  className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-medium cursor-pointer transition-colors inline-flex items-center gap-1.5"
+                >
+                  {copyPadSuccess ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <ExternalLink className="w-3.5 h-3.5 text-stone-500" />}
+                  <span>{copyPadSuccess ? 'Tersalin!' : 'Salin URL'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPadInputUrl(defaultPadUrl);
+                    resetPadUrl();
+                  }}
+                  className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-medium cursor-pointer transition-colors"
+                >
+                  Reset ke URL Default
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPadSettingsModal(false);
+                    setShowPadScriptModal(true);
+                  }}
+                  className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg font-medium cursor-pointer transition-colors inline-flex items-center gap-1"
+                >
+                  <Code className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Kode Script doGet</span>
+                </button>
+              </div>
+
+              <div className="pt-4 border-t border-stone-100 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => setShowPadSettingsModal(false)}
+                  className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded-xl cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    updatePadUrl(padInputUrl);
+                    setShowPadSettingsModal(false);
+                  }}
+                  className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-semibold rounded-xl cursor-pointer shadow-xs"
+                >
+                  Simpan & Sinkronkan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL: KODE GOOGLE APPS SCRIPT PAD (doGet) */}
+      {/* ============================================================ */}
+      {showPadScriptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-2xl w-full border border-stone-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                  <Code className="w-5 h-5 text-amber-700" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base">Kode Google Apps Script PAD (doGet)</h3>
+                  <p className="text-xs text-stone-500">Pasang kode ini pada Code.gs di Spreadsheet Laporan PAD Anda</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowPadScriptModal(false)}
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-950 text-xs flex items-start gap-2">
+                <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong>Cara Pasang Mudah:</strong>
+                  <ol className="list-decimal list-inside space-y-0.5 mt-1 text-stone-700">
+                    <li>Buka Spreadsheet Laporan PAD &gt; klik <strong>Ekstensi</strong> &gt; <strong>Apps Script</strong>.</li>
+                    <li>Hapus semua isi <code>Code.gs</code>, lalu tempel kode di bawah ini &gt; klik <strong>Simpan (💾)</strong>.</li>
+                    <li>Klik <strong>Deploy</strong> &gt; <strong>Manage deployments</strong> &gt; Edit ✏️ &gt; Version: <strong>New version</strong> &gt; Who has access: <strong>Anyone</strong> &gt; <strong>Deploy</strong>.</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="flex items-center justify-between bg-stone-800 text-stone-300 px-4 py-2 rounded-t-xl text-[11px] font-mono">
+                  <span>Code.gs (Google Apps Script PAD)</span>
+                  <button
+                    onClick={handleCopyPadScript}
+                    className="inline-flex items-center gap-1 text-white bg-amber-600 hover:bg-amber-700 px-2.5 py-1 rounded font-semibold cursor-pointer transition-colors"
+                  >
+                    {copyPadScriptSuccess ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copyPadScriptSuccess ? 'Berhasil Disalin!' : 'Salin Kode Script'}</span>
+                  </button>
+                </div>
+                <pre className="p-4 bg-stone-900 text-amber-300 font-mono text-[11px] rounded-b-xl overflow-x-auto max-h-64 border-t border-stone-700 leading-relaxed">
+                  {RECOMMENDED_PAD_APPS_SCRIPT_CODE}
+                </pre>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between">
+                <a
+                  href={padSourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-800 hover:text-emerald-950 font-bold inline-flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Buka URL Web App di Tab Baru</span>
+                </a>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowPadScriptModal(false)}
+                    className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded-xl cursor-pointer"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPadScriptModal(false);
+                      refreshPadData();
+                    }}
+                    className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-semibold rounded-xl cursor-pointer shadow-xs"
+                  >
+                    Sudah Dipasang, Tes Sekarang
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL: PENGATURAN ENDPOINT GOOGLE APPS SCRIPT RFK */}
+      {/* ============================================================ */}
+      {showRfkSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-lg w-full border border-stone-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                  <Settings className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base">Atur URL Web App Google Apps Script RFK</h3>
+                  <p className="text-xs text-stone-500">Hubungkan laporan Fisik & Keuangan dengan spreadsheet Anda</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowRfkSettingsModal(false)}
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">URL Web App (Exec / Deployment URL)</label>
+                <input
+                  type="text"
+                  value={rfkInputUrl}
+                  onChange={(e) => setRfkInputUrl(e.target.value)}
+                  placeholder="https://script.google.com/macros/s/.../exec"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono text-xs"
+                />
+                <p className="text-[11px] text-stone-500 mt-1">
+                  Tempel URL Web App Google Apps Script dari spreadsheet RFK Anda.
+                </p>
+              </div>
+
+              {/* Quick Action buttons */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleCopyRfkUrl(rfkInputUrl)}
+                  className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-medium cursor-pointer transition-colors inline-flex items-center gap-1.5"
+                >
+                  {copyRfkSuccess ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <ExternalLink className="w-3.5 h-3.5 text-stone-500" />}
+                  <span>{copyRfkSuccess ? 'Tersalin!' : 'Salin URL'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRfkInputUrl('https://script.google.com/macros/s/AKfycbyK0TIXdT32_5lcfA3OYla3svW88UXik-Pen2CgIYFjrqIu8zFHH9Ww7DEXWtBLHVEOCA/exec');
+                  }}
+                  className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-medium cursor-pointer transition-colors"
+                >
+                  Reset ke URL Default
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRfkSettingsModal(false);
+                    setShowRfkScriptModal(true);
+                  }}
+                  className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg font-medium cursor-pointer transition-colors inline-flex items-center gap-1"
+                >
+                  <Code className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Kode Script doGet</span>
+                </button>
+              </div>
+
+              <div className="pt-4 border-t border-stone-100 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => setShowRfkSettingsModal(false)}
+                  className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded-xl cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    updateRfkUrl(rfkInputUrl);
+                    setShowRfkSettingsModal(false);
+                  }}
+                  className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-semibold rounded-xl cursor-pointer shadow-xs"
+                >
+                  Simpan & Sinkronkan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL: KODE GOOGLE APPS SCRIPT RFK (doGet) */}
+      {/* ============================================================ */}
+      {showRfkScriptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-2xl w-full border border-stone-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                  <Code className="w-5 h-5 text-amber-700" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base">Kode Google Apps Script RFK (doGet)</h3>
+                  <p className="text-xs text-stone-500">Pasang kode ini pada Code.gs di Spreadsheet Realisasi Fisik & Keuangan Anda</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowRfkScriptModal(false)}
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-950 text-xs flex items-start gap-2">
+                <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong>Cara Pasang Mudah:</strong>
+                  <ol className="list-decimal list-inside space-y-0.5 mt-1 text-stone-700">
+                    <li>Buka Spreadsheet RFK &gt; klik <strong>Ekstensi</strong> &gt; <strong>Apps Script</strong>.</li>
+                    <li>Hapus semua isi <code>Code.gs</code>, lalu tempel kode di bawah ini &gt; klik <strong>Simpan (💾)</strong>.</li>
+                    <li>Klik <strong>Deploy</strong> &gt; <strong>Manage deployments</strong> &gt; Edit ✏️ &gt; Version: <strong>New version</strong> &gt; Who has access: <strong>Anyone</strong> &gt; <strong>Deploy</strong>.</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="flex items-center justify-between bg-stone-800 text-stone-300 px-4 py-2 rounded-t-xl text-[11px] font-mono">
+                  <span>Code.gs (Google Apps Script RFK)</span>
+                  <button
+                    onClick={handleCopyRfkScript}
+                    className="inline-flex items-center gap-1 text-white bg-amber-600 hover:bg-amber-700 px-2.5 py-1 rounded font-semibold cursor-pointer transition-colors"
+                  >
+                    {copyRfkScriptSuccess ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copyRfkScriptSuccess ? 'Berhasil Disalin!' : 'Salin Kode Script'}</span>
+                  </button>
+                </div>
+                <pre className="p-4 bg-stone-900 text-amber-300 font-mono text-[11px] rounded-b-xl overflow-x-auto max-h-64 border-t border-stone-700 leading-relaxed">
+                  {RECOMMENDED_RFK_APPS_SCRIPT_CODE}
+                </pre>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between">
+                <a
+                  href={rfkSourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-800 hover:text-emerald-950 font-bold inline-flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Buka URL Web App di Tab Baru</span>
+                </a>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowRfkScriptModal(false)}
+                    className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded-xl cursor-pointer"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowRfkScriptModal(false);
+                      refreshRfkData();
+                    }}
+                    className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-semibold rounded-xl cursor-pointer shadow-xs"
+                  >
+                    Sudah Dipasang, Tes Sekarang
+                  </button>
+                </div>
               </div>
             </div>
           </div>
